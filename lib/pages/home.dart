@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:app_store/models/category_model.dart';
-import 'package:app_store/models/app_model.dart';
-import 'package:app_store/services/api_service.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:app_store/models/category_model.dart'; // Ensure this is correct
+import 'package:app_store/services/api_service.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -11,172 +8,72 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final ApiService _apiService = ApiService();
-  List<CategoryModel> categories = [];
-  List<AppModel> apps = [];
+  late Future<List<dynamic>> _apps;
 
   @override
   void initState() {
     super.initState();
-    _getInitialInfo();
-  }
-
-  void _getInitialInfo() async {
-    categories = await _apiService.fetchCategories(); // Fetch categories from API
-    apps = await _apiService.fetchApps(); // Fetch apps from API
-    setState(() {}); // Update UI after fetching
+    _apps = ApiService().fetchApps(); // Fetch the apps using ApiService
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('App Store'),
-      ),
-      backgroundColor: Colors.white,
-      body: ListView(
-        children: [
-          _searchField(),
-          const SizedBox(height: 40),
-          _categoriesSection(),
-          const SizedBox(height: 40),
-          _appSection(),
-        ],
-      ),
-    );
-  }
-
-  // Search bar widget
-  Widget _searchField() {
-    return Container(
-      margin: const EdgeInsets.only(top: 40, left: 20, right: 20),
-      child: TextField(
-        decoration: InputDecoration(
-          filled: true,
-          fillColor: Colors.white,
-          hintText: 'Search for apps',
-          prefixIcon: Icon(Icons.search),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15),
-            borderSide: BorderSide.none,
+        title: Text(
+          'App Store',
+          style: TextStyle(
+            fontFamily: 'Poppins',
+            fontWeight: FontWeight.bold,
           ),
         ),
+        backgroundColor: Colors.blue,
+        centerTitle: true,
       ),
-    );
-  }
-
-  // Categories section
-  Widget _categoriesSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 20),
-          child: Text(
-            'Categories',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-        ),
-        const SizedBox(height: 15),
-        Container(
-          height: 120,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: categories.length,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            separatorBuilder: (context, index) => const SizedBox(width: 15),
-            itemBuilder: (context, index) {
-              return CategoryItem(category: categories[index]);
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Recommended apps section
-  Widget _appSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 20),
-          child: Text(
-            'Recommended Apps',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-        ),
-        const SizedBox(height: 15),
-        apps.isEmpty
-            ? Center(child: CircularProgressIndicator())
-            : Container(
-                height: 240,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: apps.length,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  separatorBuilder: (context, index) => const SizedBox(width: 15),
-                  itemBuilder: (context, index) {
-                    return AppItem(app: apps[index]);
-                  },
-                ),
-              ),
-      ],
-    );
-  }
-}
-
-// Category item widget
-class CategoryItem extends StatelessWidget {
-  final CategoryModel category;
-
-  const CategoryItem({required this.category});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 100,
-      decoration: BoxDecoration(
-        color: Color(category.boxColor).withOpacity(0.3),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SvgPicture.asset(category.iconPath, height: 50),
-          const SizedBox(height: 10),
-          Text(category.name, style: TextStyle(fontSize: 14)),
-        ],
-      ),
-    );
-  }
-}
-
-// App item widget for recommended apps
-class AppItem extends StatelessWidget {
-  final AppModel app;
-
-  const AppItem({required this.app});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 210,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(color: Colors.grey.withOpacity(0.5), blurRadius: 10, spreadRadius: 1),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SvgPicture.asset(app.iconPath, height: 100),
-          const SizedBox(height: 10),
-          Text(app.name, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          Text('${app.categoryId} | ${app.rating} stars', style: TextStyle(fontSize: 12, color: Colors.grey)),
-        ],
+      body: FutureBuilder<List<dynamic>>(
+        future: _apps,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return Center(child: Text('No apps found.'));
+          } else {
+            return ListView.builder(
+              itemCount: snapshot.data!.length,
+              itemBuilder: (context, index) {
+                var app = snapshot.data![index];
+                return Card(
+                  margin: EdgeInsets.all(10.0),
+                  elevation: 5.0,
+                  child: ListTile(
+                    leading: SvgPicture.asset(
+                      'assets/icons/games.svg', // You can change this to use other icons too
+                      height: 40.0,
+                      width: 40.0,
+                      color: Colors.blue, // You can customize the color
+                    ),
+                    title: Text(
+                      app['name'],
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    subtitle: Text(
+                      app['description'],
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            );
+          }
+        },
       ),
     );
   }

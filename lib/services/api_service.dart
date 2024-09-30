@@ -1,34 +1,36 @@
-// lib/services/api_service.dart
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:app_store/models/app_model.dart';
-import 'package:app_store/models/category_model.dart';
-// lib/services/api_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:app_store/models/app_model.dart';
-import 'package:app_store/models/category_model.dart';
 
 class ApiService {
-  final String baseUrl = 'http://localhost:5106/api'; // Update with your backend URL
+  static const String _baseUrl = 'http://localhost:5106/api';
 
-  Future<List<AppModel>> fetchApps() async {
-    final response = await http.get(Uri.parse('$baseUrl/apps'));
+  Future<List<dynamic>> fetchCategories() async {
+    final response = await http.get(Uri.parse('$_baseUrl/categories'));
+
     if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
-      return data.map((app) => AppModel.fromJson(app)).toList();
+      return jsonDecode(response.body);
     } else {
-      throw Exception('Failed to load apps');
+      throw Exception('Failed to load categories');
     }
   }
 
-  Future<List<CategoryModel>> fetchCategories() async {
-    final response = await http.get(Uri.parse('$baseUrl/categories'));
+  Future<List<dynamic>> fetchUsers() async {
+    final response = await http.get(Uri.parse('$_baseUrl/users'));
+
     if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
-      return data.map((category) => CategoryModel.fromJson(category)).toList();
+      return jsonDecode(response.body);
     } else {
-      throw Exception('Failed to load categories');
+      throw Exception('Failed to load users');
+    }
+  }
+
+  Future<List<dynamic>> fetchPurchases() async {
+    final response = await http.get(Uri.parse('$_baseUrl/purchases'));
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to load purchases');
     }
   }
 }
