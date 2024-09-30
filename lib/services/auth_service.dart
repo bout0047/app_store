@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import '../models/user_model.dart';
 
 class AuthService {
-  static const String baseUrl = 'http://localhost:5000/api/users';
+  static const String baseUrl = 'http://localhost:5006/api/apps';
 
   Future<UserModel> login(String username, String password) async {
     final response = await http.post(

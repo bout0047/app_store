@@ -1,29 +1,24 @@
-import 'package:flutter/material.dart';
+// lib/models/category_model.dart
 
 class CategoryModel {
+  final int id; 
   final String name;
-  final String iconPath;
-  final Color boxColor;  // Change this to Color
+  final int boxColor; // Assuming this is an int for color representation
+  final String iconPath; // Add this property
 
   CategoryModel({
+    required this.id,
     required this.name,
-    required this.iconPath,
     required this.boxColor,
+    required this.iconPath, // Include this in constructor
   });
 
-  static List<CategoryModel> getCategories() {
-    return [
-      CategoryModel(
-        name: 'Games',
-        iconPath: 'assets/icons/games.svg',
-        boxColor: Color(0xFF9DCEFF),  // Use Color instead of int
-      ),
-      CategoryModel(
-        name: 'Music',
-        iconPath: 'assets/icons/music.svg',
-        boxColor: Color(0xFF92A3FD),  // Use Color instead of int
-      ),
-      // Add more categories as needed
-    ];
+  factory CategoryModel.fromJson(Map<String, dynamic> json) {
+    return CategoryModel(
+      id: json['id'],
+      name: json['name'],
+      boxColor: int.parse(json['boxColor']),
+      iconPath: json['iconPath'], // Parse from JSON
+    );
   }
 }

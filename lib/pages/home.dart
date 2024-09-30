@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:app_store/models/app_model.dart';
 import 'package:app_store/models/category_model.dart';
+import 'package:app_store/models/app_model.dart';
 import 'package:app_store/services/api_service.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:app_store/models/category_model.dart'; // Ensure this is correct
 
 class HomePage extends StatefulWidget {
   @override
@@ -11,10 +12,8 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final ApiService _apiService = ApiService();
-
   List<CategoryModel> categories = [];
   List<AppModel> apps = [];
-  List<AppModel> popularApps = [];
 
   @override
   void initState() {
@@ -23,9 +22,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _getInitialInfo() async {
-    categories = CategoryModel.getCategories(); // Get static categories
+    categories = await _apiService.fetchCategories(); // Fetch categories from API
     apps = await _apiService.fetchApps(); // Fetch apps from API
-    popularApps = await _apiService.fetchPopularApps(); // Fetch popular apps
     setState(() {}); // Update UI after fetching
   }
 
@@ -39,13 +37,10 @@ class _HomePageState extends State<HomePage> {
       body: ListView(
         children: [
           _searchField(),
-          const SizedBox(height: 40,),
+          const SizedBox(height: 40),
           _categoriesSection(),
-          const SizedBox(height: 40,),
+          const SizedBox(height: 40),
           _appSection(),
-          const SizedBox(height: 40,),
-          _popularAppSection(),
-          const SizedBox(height: 40,),
         ],
       ),
     );
@@ -82,7 +77,7 @@ class _HomePageState extends State<HomePage> {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ),
-        const SizedBox(height: 15,),
+        const SizedBox(height: 15),
         Container(
           height: 120,
           child: ListView.separated(
@@ -111,49 +106,21 @@ class _HomePageState extends State<HomePage> {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ),
-        const SizedBox(height: 15,),
+        const SizedBox(height: 15),
         apps.isEmpty
             ? Center(child: CircularProgressIndicator())
             : Container(
-          height: 240,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: apps.length,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            separatorBuilder: (context, index) => const SizedBox(width: 15),
-            itemBuilder: (context, index) {
-              return AppItem(app: apps[index]);
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Popular apps section
-  Widget _popularAppSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 20),
-          child: Text(
-            'Popular Apps',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-        ),
-        const SizedBox(height: 15,),
-        popularApps.isEmpty
-            ? Center(child: CircularProgressIndicator())
-            : ListView.separated(
-          shrinkWrap: true,
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          itemCount: popularApps.length,
-          separatorBuilder: (context, index) => const SizedBox(height: 15),
-          itemBuilder: (context, index) {
-            return PopularAppItem(app: popularApps[index]);
-          },
-        ),
+                height: 240,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: apps.length,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  separatorBuilder: (context, index) => const SizedBox(width: 15),
+                  itemBuilder: (context, index) {
+                    return AppItem(app: apps[index]);
+                  },
+                ),
+              ),
       ],
     );
   }
@@ -170,7 +137,7 @@ class CategoryItem extends StatelessWidget {
     return Container(
       width: 100,
       decoration: BoxDecoration(
-        color: category.boxColor.withOpacity(0.3),
+        color: Color(category.boxColor).withOpacity(0.3),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -208,46 +175,7 @@ class AppItem extends StatelessWidget {
           SvgPicture.asset(app.iconPath, height: 100),
           const SizedBox(height: 10),
           Text(app.name, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          Text('${app.category} | ${app.rating} stars', style: TextStyle(fontSize: 12, color: Colors.grey)),
-        ],
-      ),
-    );
-  }
-}
-
-// Popular app item widget
-class PopularAppItem extends StatelessWidget {
-  final AppModel app;
-
-  const PopularAppItem({required this.app});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(color: Colors.grey.withOpacity(0.5), blurRadius: 10, spreadRadius: 1),
-        ],
-      ),
-      child: Row(
-        children: [
-          SvgPicture.asset(app.iconPath, height: 50),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(app.name, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              Text('${app.category} | ${app.rating} stars', style: TextStyle(fontSize: 12, color: Colors.grey)),
-            ],
-          ),
-          Spacer(),
-          IconButton(
-            icon: Icon(Icons.download),
-            onPressed: () {},  // Handle download action here
-          ),
+          Text('${app.categoryId} | ${app.rating} stars', style: TextStyle(fontSize: 12, color: Colors.grey)),
         ],
       ),
     );
