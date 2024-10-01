@@ -1,36 +1,54 @@
-import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class ApiService {
-  static const String _baseUrl = 'http://localhost:5106/api';
+  final String baseUrl = 'http://localhost:5000'; // Replace with your backend URL
 
-  Future<List<dynamic>> fetchCategories() async {
-    final response = await http.get(Uri.parse('$_baseUrl/categories'));
-
+  Future<List<App>> getApps() async {
+    final response = await http.get(Uri.parse('$baseUrl/api/apps'));
     if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+      List jsonResponse = json.decode(response.body);
+      return jsonResponse.map((app) => App.fromJson(app)).toList();
     } else {
-      throw Exception('Failed to load categories');
+      throw Exception('Failed to load apps');
     }
   }
 
-  Future<List<dynamic>> fetchUsers() async {
-    final response = await http.get(Uri.parse('$_baseUrl/users'));
+  Future<void> createApp(App app) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/apps'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(app.toJson()),
+    );
 
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to load users');
+    if (response.statusCode != 201) {
+      throw Exception('Failed to create app');
     }
   }
+}
 
-  Future<List<dynamic>> fetchPurchases() async {
-    final response = await http.get(Uri.parse('$_baseUrl/purchases'));
+class App {
+  int id;
+  String name;
+  String description;
 
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to load purchases');
-    }
+  App({required this.id, required this.name, required this.description});
+
+  factory App.fromJson(Map<String, dynamic> json) {
+    return App(
+      id: json['id'],
+      name: json['name'],
+      description: json['description'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+    };
   }
 }
