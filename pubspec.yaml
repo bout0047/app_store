@@ -35,6 +35,7 @@ flutter:
   assets:
     - assets/ # Directory for images, icons, etc.
     - assets/icons/
+    - assets/banner.jpg
   fonts:
     - family: Poppins
       fonts:

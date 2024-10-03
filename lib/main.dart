@@ -1,38 +1,37 @@
 import 'package:flutter/material.dart';
-import 'package:app_store/api_service.dart';
-import 'package:app_store/models/app.dart';
+import 'services/network_service.dart';
 
 void main() {
-  runApp(AppStore());
+  runApp(MyApp());
 }
 
-class AppStore extends StatelessWidget {
+class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
       title: 'App Store',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: HomePage(),
+      home: AppListScreen(),
     );
   }
 }
 
-class HomePage extends StatefulWidget {
+class AppListScreen extends StatefulWidget {
   @override
-  _HomePageState createState() => _HomePageState();
+  _AppListScreenState createState() => _AppListScreenState();
 }
 
-class _HomePageState extends State<HomePage> {
-  late Future<List<AppModel>> _futureApps;
-  String _searchText = "";
+class _AppListScreenState extends State<AppListScreen> {
+  final NetworkService networkService = NetworkService();
+  late Future<List<App>> _apps;
+  String searchQuery = "";
 
   @override
   void initState() {
     super.initState();
-    _futureApps = ApiService().fetchApps();
+    _apps = networkService.fetchApps(); // Initialize the API call
   }
 
   @override
@@ -43,29 +42,32 @@ class _HomePageState extends State<HomePage> {
       ),
       body: Column(
         children: [
-          // Banner Section
+          // Banner using Picsum
           Container(
-            margin: EdgeInsets.symmetric(vertical: 10),
             width: double.infinity,
             height: 150,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(15),
               image: DecorationImage(
-                image: NetworkImage('https://picsum.photos/800/150'),
+                image: NetworkImage('https://picsum.photos/800/150'), // Banner image from Picsum
                 fit: BoxFit.cover,
               ),
             ),
+            child: Center(
+              child: Text(
+                'Welcome to the App Store!',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  backgroundColor: Colors.black45,
+                ),
+              ),
+            ),
           ),
-
           // Search Bar
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            padding: const EdgeInsets.all(8.0),
             child: TextField(
-              onChanged: (value) {
-                setState(() {
-                  _searchText = value;
-                });
-              },
               decoration: InputDecoration(
                 hintText: 'Search for apps...',
                 prefixIcon: Icon(Icons.search),
@@ -73,52 +75,110 @@ class _HomePageState extends State<HomePage> {
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
+              onChanged: (value) {
+                setState(() {
+                  searchQuery = value.toLowerCase();
+                });
+              },
             ),
           ),
-
-          SizedBox(height: 10),
-
-          // Popular Section
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Popular Apps',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-
-          SizedBox(height: 10),
-
-          // List of Apps
+          // Future Builder for List of Apps
           Expanded(
-            child: FutureBuilder<List<AppModel>>(
-              future: _futureApps,
+            child: FutureBuilder<List<App>>(
+              future: _apps,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
+                  return Center(child: CircularProgressIndicator()); // Show a loading spinner while waiting for data
                 } else if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
-                } else if (snapshot.hasData) {
-                  List<AppModel> apps = snapshot.data!
-                      .where((app) =>
-                          app.name.toLowerCase().contains(_searchText.toLowerCase()))
-                      .toList();
+                  return Center(child: Text('Error: ${snapshot.error}')); // Show error if the API call fails
+                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return Center(child: Text('No apps available.')); // Show this if there is no data
+                } else {
+                  final apps = snapshot.data!
+                      .where((app) => app.name.toLowerCase().contains(searchQuery) || app.description.toLowerCase().contains(searchQuery))
+                      .toList(); // Filter apps based on search query
 
                   return ListView.builder(
-                    padding: EdgeInsets.symmetric(horizontal: 16.0),
                     itemCount: apps.length,
                     itemBuilder: (context, index) {
-                      return AppCard(app: apps[index]);
+                      final app = apps[index];
+                      return Card(
+                        margin: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        elevation: 5,
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // App Icon
+                              Image.network(
+                                'https://picsum.photos/50/50?random=${app.id}', // Logo image from Picsum for each app
+                                width: 50,
+                                height: 50,
+                                fit: BoxFit.cover,
+                              ),
+                              SizedBox(width: 10),
+                              // App Details
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      app.name,
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    SizedBox(height: 5),
+                                    Text(
+                                      app.description,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey[700],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              // Install Button
+                              ElevatedButton(
+                                onPressed: () {
+                                  // Mock "Install" action
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Installing ${app.name}...')),
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                  backgroundColor: Colors.blueAccent, // Updated background color for a richer look
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(30), // Make the button more rounded
+                                  ),
+                                  elevation: 8, // Add elevation to give a 3D effect
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.download, color: Colors.white),
+                                    SizedBox(width: 5),
+                                    Text(
+                                      'Install',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
                     },
                   );
-                } else {
-                  return Center(child: Text('No apps available.'));
                 }
               },
             ),
@@ -127,90 +187,4 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-}
-
-class AppCard extends StatelessWidget {
-  final AppModel app;
-
-  AppCard({required this.app});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: EdgeInsets.symmetric(vertical: 10),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          children: [
-            // App Logo using Picsum Image with unique URL for each app
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: Image.network(
-                'https://picsum.photos/100?app=${app.id}',
-                width: 50,
-                height: 50,
-                fit: BoxFit.cover,
-              ),
-            ),
-            SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    app.name,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    app.description,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {},
-              child: Text('Install'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// Placeholder classes for ApiService and AppModel
-// These should be replaced with the real implementations based on your backend API response.
-
-class ApiService {
-  Future<List<AppModel>> fetchApps() async {
-    // Simulate a network request
-    await Future.delayed(Duration(seconds: 2));
-    return [
-      AppModel(id: 1, name: "Game One", description: "An exciting game."),
-      AppModel(id: 2, name: "Productivity App", description: "Boost your productivity."),
-    ];
-  }
-}
-
-class AppModel {
-  final int id;
-  final String name;
-  final String description;
-
-  AppModel({
-    required this.id,
-    required this.name,
-    required this.description,
-  });
 }
